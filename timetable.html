@@ -439,13 +439,18 @@
             }
             
             .selected-panel {
-                display: none !important;
+                width: 100% !important;
+                max-height: 20vh;
+                border-right: none !important;
+                border-bottom: 1px solid var(--border-color);
+                padding: 10px;
+                overflow-y: auto;
             }
             
             .main-content {
                 width: 100%;
                 height: auto;
-                min-height: 75vh;
+                min-height: 55vh;
                 padding: 10px;
                 overflow-y: auto;
             }

@@ -431,29 +431,52 @@
             }
             
             .sidebar {
-                width: 100%;
-                max-height: 25vh;
+                width: 100% !important;
+                max-height: 40vh !important;
                 border-right: none;
                 border-bottom: 1px solid var(--border-color);
                 padding: 10px;
-                overflow-y: auto;
+                overflow-y: auto !important;
             }
             
             .main-content {
-                width: 100%;
-                height: auto;
-                min-height: 35vh;
-                padding: 10px;
-                overflow-y: auto;
+                width: 100% !important;
+                max-height: 4vh !important;
+                height: 4vh !important;
+                min-height: 4vh !important;
+                padding: 2px !important;
+                overflow: hidden !important;
+            }
+            
+            .timetable-card {
+                height: 4vh !important;
+                padding: 0 !important;
+                overflow: hidden !important;
+            }
+            
+            table {
+                height: 4vh !important;
+                overflow: hidden !important;
+            }
+            
+            tbody {
+                display: block !important;
+                max-height: 3vh !important;
+                overflow: hidden !important;
+            }
+            
+            tbody tr {
+                height: 6px !important;
             }
             
             .selected-panel {
+                display: block !important;
                 width: 100% !important;
-                max-height: 25vh;
+                max-height: 40vh !important;
                 border-right: none !important;
                 border-bottom: 1px solid var(--border-color);
                 padding: 10px;
-                overflow-y: auto;
+                overflow-y: auto !important;
             }
             
             h2 {
@@ -479,6 +502,13 @@
                 flex: 1;
             }
             
+            table { width: 100% !important; height: auto !important; border-collapse: collapse; table-layout: fixed !important; }
+            thead { display: none !important; }
+            tbody tr { height: 12px !important; }
+            td { padding: 2px !important; font-size: 0.5rem !important; }
+            th { display: none !important; }
+            .cell-content { font-size: 0.5rem !important; padding: 1px !important; height: 12px !important; line-height: 1 !important; }
+            
             .course-item {
                 font-size: 0.8rem;
                 padding: 8px;
@@ -502,12 +532,6 @@
                 font-size: 0.85rem;
                 margin-top: 8px;
             }
-            
-            table { font-size: 0.8rem; border-collapse: collapse; }
-            th { background: #f0f0f0; padding: 6px 2px; font-weight: bold; border: 1px solid #ddd; }
-            td { padding: 4px 2px; border: 1px solid #e0e0e0; }
-            td:first-child { background: #fafafa; font-weight: 500; font-size: 0.7rem; }
-            .cell-content { font-size: 0.7rem !important; padding: 4px; line-height: 1.2; }
         }
     </style>
 </head>
@@ -553,21 +577,6 @@
         </div>
     </aside>
 
-    <main class="main-content">
-        <div class="timetable-card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>시간</th>
-                        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
-                    </tr>
-                </thead>
-                <tbody id="timetableBody">
-                    </tbody>
-            </table>
-        </div>
-    </main>
-
     <aside class="selected-panel">
         <h3>✓ 선택한 과목</h3>
         <div id="selectedList" class="selected-list">
@@ -594,6 +603,21 @@
         <button class="save-btn" onclick="saveCourses()">💾 저장하기</button>
         <div class="save-status" id="saveStatus"></div>
     </aside>
+
+    <main class="main-content">
+        <div class="timetable-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>시간</th>
+                        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody">
+                    </tbody>
+            </table>
+        </div>
+    </main>
 </div>
 
 <script>

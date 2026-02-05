@@ -1,0 +1,1192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>대학 시간표 빌더</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #c1272d;
+            --bg-color: white;
+            --border-color: #f5d5d6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        html, body { height: 100%; }
+        body { background-color: var(--bg-color); color: #333; height: 100vh; overflow: hidden; }
+
+        .app-container { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+        
+        @media (max-width: 1200px) {
+            body { overflow: auto; }
+            .app-container { height: auto; overflow: visible; }
+        }
+
+        .sidebar {
+            width: 320px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+        }
+
+        .selected-panel {
+            width: 300px;
+            background: white;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        .selected-panel h3 {
+            font-size: 1rem;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .selected-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 12px;
+        }
+
+        .selected-item {
+            background: #ffffff;
+            padding: 8px;
+            margin-bottom: 6px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .selected-item:hover {
+            background: #ffe0e0;
+        }
+
+        .selected-item strong {
+            display: block;
+            font-size: 0.9rem;
+            margin-bottom: 3px;
+        }
+
+        .selected-item small {
+            color: #666;
+            font-size: 0.75rem;
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #ff4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .stats-box {
+            background: #fff0f0;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+
+        .stats-row:last-child {
+            margin-bottom: 0;
+            padding-top: 6px;
+            border-top: 1px solid #f5d5d6;
+            font-weight: bold;
+        }
+
+        .save-btn {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .save-btn:hover {
+            background: #a01d23;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(193, 39, 45, 0.3);
+        }
+
+        .save-status {
+            text-align: center;
+            font-size: 0.75rem;
+            color: #666;
+            margin-top: 6px;
+            min-height: 16px;
+        }
+
+        .save-status.success {
+            color: #4CAF50;
+            font-weight: 600;
+        }
+
+        h2 { margin-bottom: 20px; font-size: 1.2rem; color: var(--primary-color); }
+
+        .upload-section { margin-bottom: 12px; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            background: #f8fafc;
+            color: #555;
+            font-size: 0.85rem;
+        }
+
+        .filters { display: flex; gap: 10px; margin-bottom: 20px; }
+        .filters select {
+            flex: 1;
+            padding: 10px;
+            padding-right: 30px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            outline: none;
+            background-position: right 8px center;
+            background-size: 12px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+        }
+
+        .course-list {
+            flex: 1;
+            overflow-y: auto;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+
+        .course-item {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 10px;
+            padding-left: 35px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+            position: relative;
+        }
+
+        .course-item::before {
+            content: '';
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            background: white;
+        }
+
+        .course-item.selected::before {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: inset 0 0 0 3px white;
+        }
+
+        .course-item:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .course-item strong { display: block; margin-bottom: 3px; font-size: 0.95rem; }
+        .course-item span { font-size: 0.8rem; color: #666; }
+
+        .main-content { flex: 1; padding: 12px; overflow: hidden; height: 100%; min-width: 0; background: white; }
+        
+        .timetable-card {
+            background: white !important;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: none;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        table { width: 100% !important; height: 100%; border-collapse: collapse; table-layout: fixed !important; }
+        th, td { 
+            width: 20% !important;
+            box-sizing: border-box !important;
+        }
+        th:first-child, td:first-child { 
+            width: 5% !important; 
+        }
+        th {
+            background: #fef5f5;
+            color: #555;
+            font-weight: 600;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            font-size: 0.85rem;
+        }
+
+        td {
+            border: 1px solid var(--border-color);
+            vertical-align: top;
+            padding: 2px;
+            position: relative;
+            background: white !important;
+        }
+
+        td:first-child { width: 50px; background: #fef5f5 !important; vertical-align: middle; text-align: center; font-size: 0.75rem; color: #8B4049; font-weight: 500; }
+
+        .cell-content {
+            font-size: 0.75rem !important;
+            padding: 3px;
+            border-radius: 8px;
+            width: 100%;
+            height: 100%;
+            max-height: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            line-height: 1.1 !important;
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            transition: all 0.2s;
+            overflow: hidden;
+            white-space: normal;
+            word-break: break-word;
+        }
+        
+        .cell-content:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.12);
+        }
+        
+        .cell-overlap {
+            position: relative;
+        }
+        
+        .cell-overlap::before {
+            content: '⚠️';
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: help;
+        }
+        
+        .cell-overlap::after {
+            content: '시간 겹침';
+            position: absolute;
+            top: -25px;
+            right: 0;
+            background: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            z-index: 10;
+        }
+        
+        .cell-overlap:hover::after {
+            opacity: 1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .modal-body {
+            font-size: 0.95rem;
+            line-height: 1.8;
+            color: #555;
+            min-height: auto;
+            display: block;
+            text-align: left;
+        }
+
+        .modal-footer {
+            margin-top: 24px;
+            text-align: right;
+        }
+
+        .modal-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .modal-btn:hover {
+            background: #a01d23;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(193, 39, 45, 0.3);
+        }
+
+        @media (max-width: 1200px) {
+            .app-container {
+                flex-wrap: wrap;
+                height: auto;
+            }
+            
+            .sidebar {
+                width: 100%;
+                max-height: 30vh;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 12px;
+                overflow-y: auto;
+            }
+            
+            .selected-panel {
+                width: 100%;
+                max-height: 25vh;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding: 12px;
+                overflow-y: auto;
+            }
+            
+            .main-content {
+                width: 100%;
+                height: auto;
+                min-height: 45vh;
+                padding: 8px;
+                overflow-y: auto;
+            }
+            
+            h2 {
+                margin-bottom: 10px;
+                font-size: 1rem;
+            }
+            
+            .selected-panel h3 {
+                font-size: 0.9rem;
+                margin-bottom: 8px;
+            }
+            
+            .filters {
+                gap: 6px;
+                margin-bottom: 10px;
+            }
+            
+            .filters select {
+                font-size: 0.85rem;
+                padding: 8px;
+            }
+            
+            .course-item {
+                font-size: 0.8rem;
+                padding: 8px;
+                padding-left: 30px;
+                margin-bottom: 6px;
+            }
+            
+            .selected-item {
+                font-size: 0.8rem;
+                padding: 6px;
+                margin-bottom: 4px;
+            }
+            
+            .stats-box {
+                font-size: 0.75rem;
+                padding: 8px;
+            }
+            
+            .save-btn {
+                padding: 10px;
+                font-size: 0.85rem;
+                margin-top: 8px;
+            }
+            
+            table { font-size: 0.75rem; }
+            th, td { padding: 4px 2px; }
+            .cell-content { font-size: 0.65rem !important; padding: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="guideModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>안내사항</h2>
+        </div>
+        <div class="modal-body">
+            <div style="text-align: left; width: 100%;">
+                <p style="margin: 8px 0;">• 왼쪽에서 과목을 클릭하여 시간표에 추가하세요.</p>
+                <p style="margin: 8px 0;">• 겹치는 시간은 ⚠️ 아이콘으로 표시됩니다.</p>
+                <p style="margin: 8px 0;">• 선택한 과목은 '저장하기'로 보관됩니다.</p>
+                <p style="margin: 8px 0;">• 전공/학년으로 필터링하여 쉽게 찾을 수 있습니다.</p>
+                <p style="margin: 8px 0;">• 오류 발생 시 연락 주세요!</p>
+                <p style="margin: 8px 0;">• 개인적으로 공유 가능합니다.</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="modal-btn" onclick="closeGuideModal()">시작하기</button>
+        </div>
+    </div>
+</div>
+
+<div class="app-container">
+    <aside class="sidebar">
+        <h2>📅 서울예술대학교 시간표</h2>
+
+        <div class="filters">
+            <select id="deptSelect"><option value="">전공 선택</option></select>
+            <select id="gradeSelect">
+                <option value="">학년 선택</option>
+                <option value="1">1학년</option>
+                <option value="2">2학년</option>
+                <option value="3">3학년</option>
+            </select>
+        </div>
+
+        <div id="courseList" class="course-list">
+            <p style="text-align:center; color:#999; margin-top:20px;">데이터를 불러오는 중입니다.</p>
+        </div>
+    </aside>
+
+    <aside class="selected-panel">
+        <h3>✓ 선택한 과목</h3>
+        <div id="selectedList" class="selected-list">
+            <p style="text-align:center; color:#999; margin-top:20px; font-size:0.85rem;">과목을 클릭하여 추가하세요</p>
+        </div>
+        <div id="statsBox" class="stats-box">
+            <div class="stats-row">
+                <span>총 수업:</span>
+                <span id="statCount">0개</span>
+            </div>
+            <div class="stats-row">
+                <span>전필:</span>
+                <span id="statRequired">0개</span>
+            </div>
+            <div class="stats-row">
+                <span>전선:</span>
+                <span id="statElective">0개</span>
+            </div>
+            <div class="stats-row">
+                <span>총 학점:</span>
+                <span id="statCredits">0학점</span>
+            </div>
+        </div>
+        <button class="save-btn" onclick="saveCourses()">💾 저장하기</button>
+        <div class="save-status" id="saveStatus"></div>
+    </aside>
+
+    <main class="main-content">
+        <div class="timetable-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>시간</th>
+                        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+</div>
+
+<script>
+    let allCourses = [];
+    let selectedCourses = [];
+    const daysMap = { '월': 0, '화': 1, '수': 2, '목': 3, '금': 4 };
+    const courseColors = {};
+    const prettyColors = [
+        { bg: '#FFE5E5', text: '#8B4049' },
+        { bg: '#FFF0E0', text: '#8B6914' },
+        { bg: '#E8F5E9', text: '#2E7D32' },
+        { bg: '#E3F2FD', text: '#1565C0' },
+        { bg: '#F3E5F5', text: '#6A1B9A' },
+        { bg: '#FFF9C4', text: '#827717' },
+        { bg: '#FCE4EC', text: '#AD1457' },
+        { bg: '#E0F2F1', text: '#00695C' },
+        { bg: '#FBE9E7', text: '#BF360C' },
+        { bg: '#E8EAF6', text: '#283593' }
+    ];
+    let colorIndex = 0;
+    
+    function getCourseColor(courseName) {
+        if (!courseColors[courseName]) {
+            courseColors[courseName] = prettyColors[colorIndex % prettyColors.length];
+            colorIndex++;
+        }
+        return courseColors[courseName];
+    }
+
+    function closeGuideModal() {
+        const modal = document.getElementById('guideModal');
+        modal.classList.remove('show');
+    }
+
+    function showGuideModal() {
+        const modal = document.getElementById('guideModal');
+        modal.classList.add('show');
+    }
+
+    function getCourseKey(course) {
+        return `${course['교과목명']}|${course['교수명']}|${course['웹게시시간표']}`;
+    }
+
+    function saveCourses() {
+        const courseData = selectedCourses.map(sc => ({
+            name: sc.course['교과목명'],
+            professor: sc.course['교수명'],
+            time: sc.course['웹게시시간표']
+        }));
+        console.log('저장하는 과목:', courseData);
+        localStorage.setItem('selectedCourses', JSON.stringify(courseData));
+        
+        const statusEl = document.getElementById('saveStatus');
+        statusEl.textContent = '✓ 저장되었습니다 (' + courseData.length + '개)';
+        statusEl.classList.add('success');
+        setTimeout(() => {
+            statusEl.textContent = '';
+            statusEl.classList.remove('success');
+        }, 2000);
+    }
+
+    function loadSavedCourses() {
+        const saved = localStorage.getItem('selectedCourses');
+        if (!saved) return [];
+        try {
+            return JSON.parse(saved);
+        } catch {
+            return [];
+        }
+    }
+
+    function restoreCourses(savedCourseData) {
+        if (!savedCourseData || savedCourseData.length === 0) return;
+        
+        savedCourseData.forEach(data => {
+            const course = allCourses.find(c => 
+                c['교과목명'] === data.name && 
+                c['교수명'] === data.professor && 
+                c['웹게시시간표'] === data.time
+            );
+            if (course) {
+                const existingIndex = selectedCourses.findIndex(sc => 
+                    sc.course['교과목명'] === course['교과목명'] &&
+                    sc.course['교수명'] === course['교수명'] &&
+                    sc.course['웹게시시간표'] === course['웹게시시간표']
+                );
+                if (existingIndex < 0) {
+                    selectedCourses.push({ index: -1, course });
+                }
+            }
+        });
+        
+        renderList(window.currentFiltered || allCourses);
+        renderSelectedList();
+        updateTimetable();
+        updateStats();
+    }
+
+    const SHEET_ID = '1whjwCYYAwUmovpDQ3wWR7gPkVq8ZaqXOLz9h1xWWpxo';
+    const SHEET_GID = '0';
+    const PUBLISHED_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSfvViCMHfhK0zZYBqxOkcfR33rV-7CmfBlotyzYEt414CtjYWeButUNLIZXWQ1CIkGJlTppwoqmgVG/pub?output=csv&gid=0';
+    const MANUAL_HEADERS = [
+        '소속', '학년', '교과목명', '이수구분', '교과 구분', '분반', '제한 인원', '교수명', '학점', '시 수', '', '웹게시시간표'
+    ];
+
+    const tbody = document.getElementById('timetableBody');
+    for (let i = 1; i <= 14; i++) {
+        const row = document.createElement('tr');
+        let cells = `<td>${i}</td>`;
+        for (let j = 0; j < 5; j++) {
+            cells += `<td id="cell-${j}-${i}"></td>`;
+        }
+        row.innerHTML = cells;
+        tbody.appendChild(row);
+    }
+
+    function normalizeKey(key) {
+        return String(key || '')
+            .replace(/^\uFEFF/, '')
+            .replace(/\s+/g, '')
+            .replace(/[\r\n]/g, '')
+            .replace(/[()\[\]{}<>]/g, '')
+            .replace(/[:_\-]/g, '')
+            .trim();
+    }
+
+    function getByKeyIncludes(row, patterns) {
+        const keys = Object.keys(row);
+        for (const p of patterns) {
+            const hit = keys.find(k => k.includes(p));
+            if (hit) return row[hit];
+        }
+        return '';
+    }
+
+    function normalizeRow(row) {
+        let gradeVal = row['학년'] || row['b'] || row['col1'] || '';
+        gradeVal = String(gradeVal).replace(/학년/g, '').trim();
+        
+        const mapped = {
+            '교과목명': row['교과목명'] || row['col2'] || '',
+            '교수명': row['교수명'] || row['col7'] || '',
+            '웹게시시간표': row['웹게시시간표'] || row['col11'] || '',
+            '소속': row['소속'] || row['col0'] || '',
+            '학년': gradeVal,
+            '학점': String(row['학점'] || row['col8'] || '').trim(),
+            '제한인원': String(row['제한 인원'] || row['col6'] || '').trim(),
+            '이수구분': String(row['이수구분'] || row['col3'] || '').trim()
+        };
+        
+        return mapped;
+    }
+
+    function sanitizeCourse(course) {
+        const cleaned = {
+            '교과목명': String(course['교과목명'] || '').trim(),
+            '교수명': String(course['교수명'] || '').trim(),
+            '웹게시시간표': String(course['웹게시시간표'] || '').trim(),
+            '소속': String(course['소속'] || '').trim(),
+            '학년': String(course['학년'] || '').trim(),
+            '학점': String(course['학점'] || '').trim(),
+            '제한인원': String(course['제한인원'] || '').trim(),
+            '이수구분': String(course['이수구분'] || '').trim()
+        };
+
+        const isNotice = cleaned['교과목명'].startsWith('*') || cleaned['교과목명'].includes('이수구분');
+        const isHeaderLike = cleaned['교과목명'] === '학기' || cleaned['교과목명'] === '소속' || cleaned['교과목명'] === '교과목명';
+        const isEmptyInfo = !cleaned['교수명'] && !cleaned['웹게시시간표'] && !cleaned['소속'];
+
+        if ((isNotice || isHeaderLike) && isEmptyInfo) return null;
+        if (cleaned['교과목명'] === '교과목' && isEmptyInfo) return null;
+        if (cleaned['교과목명'] === '교과목명' && isEmptyInfo) return null;
+        if (!cleaned['교과목명'] && isEmptyInfo) return null;
+
+        return cleaned;
+    }
+
+    function sheetToCourses(sheet) {
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+        if (!rows || rows.length === 0) return [];
+
+        console.log('===== 첫 5개 행 (원본) =====');
+        rows.slice(0, 5).forEach((r, i) => console.log(`Row ${i}:`, r));
+        const targetHeaders = ['학기', '소속', '학과', '학부', '전공', '학년', '교과목명', '교과목', '교수명', '웹게시시간표'];
+        let headerRowIndex = 0;
+        let bestScore = -1;
+        let foundRequired = false;
+
+        for (let i = 0; i < rows.length; i++) {
+            const normalizedCells = rows[i].map(normalizeKey);
+            const filled = normalizedCells.filter(v => v).length;
+            if (filled < 2) continue;
+
+            const hasRequired = requiredHeaders.every(h => normalizedCells.some(c => c.includes(normalizeKey(h))));
+            const score = targetHeaders.reduce((acc, h) => {
+                const hit = normalizedCells.some(c => c.includes(normalizeKey(h)));
+                return acc + (hit ? 1 : 0);
+            }, 0);
+
+            if (hasRequired) {
+                headerRowIndex = i;
+                bestScore = score;
+                foundRequired = true;
+                break;
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                headerRowIndex = i;
+            }
+        }
+
+        let headers = [];
+        let dataRows = [];
+
+        if (foundRequired) {
+            headers = rows[headerRowIndex].map(normalizeKey);
+            dataRows = rows.slice(headerRowIndex + 1);
+        } else {
+            headers = MANUAL_HEADERS.map(normalizeKey);
+            dataRows = rows;
+        }
+
+        const raw = dataRows.map(r => {
+            const obj = {};
+            headers.forEach((h, idx) => {
+                const key = h || `col${idx}`;
+                obj[key] = r[idx] ?? '';
+            });
+            return obj;
+        });
+
+        const normalized = raw.map(normalizeRow);
+        return normalized;
+    }
+
+    function parseGvizTable(table) {
+        let headers = table.cols.map(c => c.label || c.id || '');
+        headers = headers.map(normalizeKey);
+
+        const rows = table.rows.map(r => {
+            const obj = {};
+            r.c.forEach((cell, idx) => {
+                const key = headers[idx] || `col${idx}`;
+                obj[key] = cell ? (cell.f ?? cell.v ?? '') : '';
+            });
+            return obj;
+        });
+
+        return rows.map(normalizeRow);
+    }
+
+    function loadFromGvizJsonp() {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => reject(new Error('GViz JSONP timeout')), 8000);
+            const callbackHolder = {
+                setResponse: (resp) => {
+                    try {
+                        const table = resp.table;
+                        const data = parseGvizTable(table);
+                        resolve(data);
+                    } catch (e) {
+                        reject(e);
+                    } finally {
+                        clearTimeout(timeout);
+                        script.remove();
+                    }
+                }
+            };
+
+            window.google = window.google || {};
+            window.google.visualization = window.google.visualization || {};
+            window.google.visualization.Query = callbackHolder;
+
+            const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?gid=${SHEET_GID}&headers=1&tqx=out:json`;
+            const script = document.createElement('script');
+            script.src = gvizUrl;
+            script.onerror = () => {
+                clearTimeout(timeout);
+                script.remove();
+                reject(new Error('GViz JSONP load error'));
+            };
+            document.body.appendChild(script);
+        });
+    }
+
+    async function loadFromGoogleSheet() {
+        const listDiv = document.getElementById('courseList');
+
+        listDiv.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">데이터를 불러오는 중입니다.</p>';
+
+        try {
+            try {
+                const res = await fetch(PUBLISHED_CSV_URL, { cache: 'no-store' });
+                if (!res.ok) throw new Error('published CSV fetch 실패');
+
+                const buffer = await res.arrayBuffer();
+                let csvText = '';
+                try {
+                    csvText = new TextDecoder('utf-8').decode(buffer);
+                } catch {
+                    csvText = new TextDecoder('euc-kr').decode(buffer);
+                }
+
+                if (!csvText.includes('교과목') && !csvText.includes('학기')) {
+                    try {
+                        csvText = new TextDecoder('euc-kr').decode(buffer);
+                    } catch {
+                        // ignore
+                    }
+                }
+
+                const workbook = XLSX.read(csvText, { type: 'string' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                allCourses = sheetToCourses(sheet);
+            } catch {
+                allCourses = await loadFromGvizJsonp();
+            }
+            allCourses = allCourses
+                .map(sanitizeCourse)
+                .filter(Boolean)
+                .filter(c => Object.values(c).some(v => String(v).trim() !== ''));
+            if (allCourses.length === 0) {
+                listDiv.innerHTML = '<p style="text-align:center; padding:20px; color:#d33;">데이터가 비어있습니다. 시트 첫 행(헤더)과 데이터 행을 확인해주세요.</p>';
+                return;
+            }
+            initFilter();
+            renderList(allCourses);
+            const savedCourseNames = loadSavedCourses();
+            if (savedCourseNames.length > 0) {
+                setTimeout(() => restoreCourses(savedCourseNames), 100);
+            }
+            setTimeout(fitTimetableRows, 0);
+        } catch (err) {
+            console.error(err);
+
+            listDiv.innerHTML =
+                '<p style="text-align:center; padding:20px; color:#d33;">스프레드시트를 불러오지 못했습니다.<br>스프레드시트를 “웹에 게시”로 설정하거나 링크 공개 상태인지 확인해주세요.</p>';
+        }
+    }
+
+    function initFilter() {
+        const deptSelect = document.getElementById('deptSelect');
+        const depts = [...new Set(allCourses.map(c => c['소속']).filter(Boolean))];
+        
+        deptSelect.innerHTML = '<option value="">전공 선택</option>';
+        if (depts.length === 0) {
+            const opt = document.createElement('option');
+            opt.value = '';
+            opt.textContent = '학과 정보 없음';
+            opt.disabled = true;
+            deptSelect.appendChild(opt);
+        } else {
+            depts.sort().forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                deptSelect.appendChild(opt);
+            });
+        }
+
+        deptSelect.onchange = applyFilters;
+        document.getElementById('gradeSelect').onchange = applyFilters;
+    }
+
+    function applyFilters() {
+        const dept = document.getElementById('deptSelect').value;
+        const grade = document.getElementById('gradeSelect').value;
+
+        const filtered = allCourses.filter(c => {
+            const matchDept = !dept || c['소속'] === dept;
+            const rawGrade = String(c['학년'] || '').replace(/\s+/g, '');
+            const matchGrade = !grade || rawGrade.includes(grade) || rawGrade.includes(`${grade}학년`);
+            return matchDept && matchGrade;
+        });
+
+        renderList(filtered);
+    }
+
+    function renderList(courses) {
+        const listDiv = document.getElementById('courseList');
+        if (courses.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; padding:20px;">검색 결과가 없습니다.</p>';
+            return;
+        }
+
+        const selectedSet = new Set(selectedCourses.map(sc => 
+            `${sc.course['교과목명']}|${sc.course['교수명']}|${sc.course['웹게시시간표']}`
+        ));
+
+        listDiv.innerHTML = courses.map((c, index) => {
+            const credit = c['학점'] ? c['학점'] + '학점' : '';
+            const type = c['이수구분'] ? `(${c['이수구분']})` : '';
+            const creditWithType = [credit, type].filter(Boolean).join(' ');
+            const capacity = c['제한인원'] ? '정원 ' + c['제한인원'] + '명' : '';
+            const infoLine = [creditWithType, capacity].filter(Boolean).join(' | ');
+            const courseKey = `${c['교과목명']}|${c['교수명']}|${c['웹게시시간표']}`;
+            const isSelected = selectedSet.has(courseKey);
+            
+            return `
+            <div class="course-item ${isSelected ? 'selected' : ''}" onclick="toggleCourse(${index})">
+                <strong>${c['교과목명'] || '과목명 없음'}</strong>
+                <span>${c['교수명'] || '교수명 없음'} | ${c['웹게시시간표'] || '시간 미지정'}</span>
+                <br><small style="color:#aaa">${c['소속'] || '학과 정보 없음'} ${c['학년'] ? `(${c['학년']}학년)` : ''}${infoLine ? ' | ' + infoLine : ''}</small>
+            </div>
+        `;
+        }).join('');
+        
+        window.currentFiltered = courses;
+    }
+
+    // 과목 선택/해제 토글
+    function toggleCourse(index) {
+        const course = window.currentFiltered[index];
+        const existingIndex = selectedCourses.findIndex(sc => 
+            sc.course['교과목명'] === course['교과목명'] &&
+            sc.course['교수명'] === course['교수명'] &&
+            sc.course['웹게시시간표'] === course['웹게시시간표']
+        );
+
+        if (existingIndex >= 0) {
+            selectedCourses.splice(existingIndex, 1);
+        } else {
+            selectedCourses.push({ index, course });
+        }
+
+        renderList(window.currentFiltered);
+        renderSelectedList();
+        updateTimetable();
+        updateStats();
+    }
+
+    function renderSelectedList() {
+        const listDiv = document.getElementById('selectedList');
+        
+        if (selectedCourses.length === 0) {
+            listDiv.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px; font-size:0.85rem;">과목을 클릭하여 추가하세요</p>';
+            return;
+        }
+
+        listDiv.innerHTML = selectedCourses.map((sc, idx) => {
+            const c = sc.course;
+            const credit = c['학점'] ? c['학점'] + '학점' : '';
+            const type = c['이수구분'] ? `(${c['이수구분']})` : '';
+            const creditWithType = [credit, type].filter(Boolean).join(' ');
+            
+            const timeData = c['웹게시시간표'];
+            const noTime = !timeData || timeData === '시간 미지정' || timeData.includes('미지정');
+            const warningStyle = noTime ? 'background: #fff3cd; border-left: 3px solid #ff9800;' : '';
+            const warningIcon = noTime ? '<span style="color: #ff9800; font-weight: bold; margin-right: 4px;">⚠️</span>' : '';
+            
+            return `
+            <div class="selected-item" onclick="removeCourse(${idx})" style="${warningStyle}">
+                <button class="remove-btn" onclick="event.stopPropagation(); removeCourse(${idx})">×</button>
+                <strong>${warningIcon}${c['교과목명']}</strong>
+                <small>${c['교수명']} | ${creditWithType}</small>
+                ${noTime ? '<small style="display:block; color:#ff9800; margin-top:3px;">⚠️ 시간 미지정</small>' : ''}
+            </div>
+        `;
+        }).join('');
+    }
+
+    function removeCourse(idx) {
+        selectedCourses.splice(idx, 1);
+        renderList(window.currentFiltered);
+        renderSelectedList();
+        updateTimetable();
+        updateStats();
+    }
+
+    function updateTimetable() {
+        const cellData = {};
+        for (let i = 1; i <= 14; i++) {
+            for (let j = 0; j < 5; j++) {
+                const cell = document.getElementById(`cell-${j}-${i}`);
+                if (cell) {
+                    cell.innerHTML = '';
+                    cellData[`${j}-${i}`] = [];
+                }
+            }
+        }
+
+        selectedCourses.forEach(sc => {
+            addCourseToTimetable(sc.course, cellData);
+        });
+    }
+
+    function addCourseToTimetable(course, cellData) {
+        let timeData = course['웹게시시간표'];
+
+        if (!timeData || timeData === '시간 미지정' || timeData.includes('미지정')) {
+            return;
+        }
+
+        if (typeof timeData !== 'string') return;
+
+        const dayTimePattern = /[월화수목금]\d+(?:,\d+)*/g;
+        const dayTimeSessions = timeData.match(dayTimePattern) || [];
+        
+        dayTimeSessions.forEach(session => {
+            const cleaned = session.trim().replace(/\s+/g, '');
+            const dayChar = cleaned[0];
+            const dayIndex = daysMap[dayChar];
+            let withoutParens = cleaned;
+            while (withoutParens.includes('(')) {
+                withoutParens = withoutParens.replace(/\([^)]*\)/g, '');
+            }
+            withoutParens = withoutParens.replace(/\)/g, '');
+            const periodText = withoutParens.substring(1);
+            const periods = [];
+            
+
+            const parts = periodText.split(',').map(p => p.trim()).filter(Boolean);
+            
+            parts.forEach(part => {
+                if (part.includes('-') || part.includes('~')) {
+                    const range = part.split(/[-~]/).map(v => v.trim()).filter(Boolean);
+                    if (range.length === 2 && !isNaN(range[0]) && !isNaN(range[1])) {
+                        const start = parseInt(range[0], 10);
+                        const end = parseInt(range[1], 10);
+                        for (let p = Math.min(start, end); p <= Math.max(start, end); p++) {
+                            periods.push(String(p));
+                        }
+                    }
+                } else if (part && !isNaN(part)) {
+                    periods.push(part);
+                }
+            });
+
+            if (dayIndex !== undefined && periods.length > 0) {
+                const colors = getCourseColor(course['교과목명']);
+                periods.forEach(p => {
+                    const pNum = p.trim();
+                    const cellKey = `${dayIndex}-${pNum}`;
+                    const cell = document.getElementById(`cell-${cellKey}`);
+                    if (cell && cellData) {
+                        cellData[cellKey].push(course['교과목명']);
+                        const isOverlap = cellData[cellKey].length > 1;
+                        const overlapClass = isOverlap ? ' cell-overlap' : '';
+                        cell.innerHTML = `<div class="cell-content${overlapClass}" style="background: ${colors.bg}; color: ${colors.text};">${course['교과목명']}</div>`;
+                    }
+                });
+            }
+        });
+    }
+
+    function updateStats() {
+        const totalCount = selectedCourses.length;
+        let totalCredits = 0;
+        let requiredCount = 0;
+        let electiveCount = 0;
+
+        selectedCourses.forEach(sc => {
+            const c = sc.course;
+            const credit = parseFloat(c['학점']) || 0;
+            totalCredits += credit;
+
+            const type = c['이수구분'] || '';
+            if (type.includes('전필') || type.includes('필수')) {
+                requiredCount++;
+            } else if (type.includes('전선') || type.includes('선택')) {
+                electiveCount++;
+            }
+        });
+
+        document.getElementById('statCount').textContent = `${totalCount}개`;
+        document.getElementById('statRequired').textContent = `${requiredCount}개`;
+        document.getElementById('statElective').textContent = `${electiveCount}개`;
+        document.getElementById('statCredits').textContent = `${totalCredits}학점`;
+    }
+
+    function fitTimetableRows() {
+        const card = document.querySelector('.timetable-card');
+        const thead = card.querySelector('thead');
+        const tbodyEl = card.querySelector('tbody');
+        const rows = tbodyEl.querySelectorAll('tr');
+        if (!rows.length) return;
+
+        const styles = getComputedStyle(card);
+        const padTop = parseFloat(styles.paddingTop) || 0;
+        const padBottom = parseFloat(styles.paddingBottom) || 0;
+        const cardHeight = card.clientHeight - padTop - padBottom;
+        const headHeight = thead.clientHeight;
+        const bodyHeight = Math.max(cardHeight - headHeight, 0);
+        const rowHeight = Math.max(Math.floor(bodyHeight / rows.length), 40);
+
+        rows.forEach(row => {
+            row.style.height = `${rowHeight}px`;
+        });
+    }
+
+    window.addEventListener('resize', fitTimetableRows);
+    window.addEventListener('load', () => {
+        showGuideModal();
+        loadFromGoogleSheet();
+        fitTimetableRows();
+    });
+</script>
+
+</body>
+</html>

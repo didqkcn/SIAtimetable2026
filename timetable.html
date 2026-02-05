@@ -442,33 +442,63 @@
             
             .main-content {
                 width: 100% !important;
-                max-height: 20vh !important;
-                height: 20vh !important;
-                min-height: 20vh !important;
+                max-height: 30vh !important;
+                height: 30vh !important;
+                min-height: 30vh !important;
                 padding: 5px !important;
                 overflow: hidden !important;
                 order: 2 !important;
             }
             
             .timetable-card {
-                height: 20vh !important;
+                height: 30vh !important;
                 padding: 5px !important;
                 overflow: hidden !important;
             }
             
             table {
-                height: 20vh !important;
+                width: 100% !important;
+                height: 30vh !important;
                 overflow: hidden !important;
+                table-layout: fixed !important;
+            }
+            
+            thead {
+                display: table-header-group !important;
+            }
+            
+            th {
+                background: #f0f0f0 !important;
+                padding: 3px !important;
+                font-size: 0.7rem !important;
+                border: 1px solid #ddd !important;
             }
             
             tbody {
-                display: block !important;
-                max-height: 18vh !important;
+                display: table-row-group !important;
                 overflow: hidden !important;
             }
             
             tbody tr {
-                height: 14px !important;
+                height: 18px !important;
+            }
+            
+            td {
+                padding: 2px !important;
+                font-size: 0.65rem !important;
+                border: 1px solid #e0e0e0 !important;
+            }
+            
+            td:first-child {
+                width: 8% !important;
+                font-size: 0.65rem !important;
+            }
+            
+            .cell-content {
+                font-size: 0.65rem !important;
+                padding: 2px !important;
+                height: 16px !important;
+                line-height: 1 !important;
             }
             
             .selected-panel {

@@ -425,23 +425,15 @@
 
         @media (max-width: 1200px) {
             .app-container {
+                flex-direction: column;
                 flex-wrap: wrap;
                 height: auto;
             }
             
             .sidebar {
                 width: 100%;
-                max-height: 20vh;
+                max-height: 25vh;
                 border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                padding: 10px;
-                overflow-y: auto;
-            }
-            
-            .selected-panel {
-                width: 100% !important;
-                max-height: 20vh;
-                border-right: none !important;
                 border-bottom: 1px solid var(--border-color);
                 padding: 10px;
                 overflow-y: auto;
@@ -450,7 +442,16 @@
             .main-content {
                 width: 100%;
                 height: auto;
-                min-height: 55vh;
+                min-height: 35vh;
+                padding: 10px;
+                overflow-y: auto;
+            }
+            
+            .selected-panel {
+                width: 100% !important;
+                max-height: 25vh;
+                border-right: none !important;
+                border-bottom: 1px solid var(--border-color);
                 padding: 10px;
                 overflow-y: auto;
             }
@@ -552,6 +553,21 @@
         </div>
     </aside>
 
+    <main class="main-content">
+        <div class="timetable-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>시간</th>
+                        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
+                    </tr>
+                </thead>
+                <tbody id="timetableBody">
+                    </tbody>
+            </table>
+        </div>
+    </main>
+
     <aside class="selected-panel">
         <h3>✓ 선택한 과목</h3>
         <div id="selectedList" class="selected-list">
@@ -578,21 +594,6 @@
         <button class="save-btn" onclick="saveCourses()">💾 저장하기</button>
         <div class="save-status" id="saveStatus"></div>
     </aside>
-
-    <main class="main-content">
-        <div class="timetable-card">
-            <table>
-                <thead>
-                    <tr>
-                        <th>시간</th>
-                        <th>월</th><th>화</th><th>수</th><th>목</th><th>금</th>
-                    </tr>
-                </thead>
-                <tbody id="timetableBody">
-                    </tbody>
-            </table>
-        </div>
-    </main>
 </div>
 
 <script>

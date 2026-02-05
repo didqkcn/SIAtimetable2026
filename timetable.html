@@ -439,12 +439,7 @@
             }
             
             .selected-panel {
-                width: 100%;
-                max-height: 25vh;
-                border-right: none;
-                border-bottom: 1px solid var(--border-color);
-                padding: 12px;
-                overflow-y: auto;
+                display: none;
             }
             
             .main-content {
@@ -456,8 +451,9 @@
             }
             
             h2 {
-                margin-bottom: 10px;
-                font-size: 1rem;
+                margin-bottom: 8px;
+                font-size: 0.95rem;
+                display: block !important;
             }
             
             .selected-panel h3 {
@@ -466,13 +462,15 @@
             }
             
             .filters {
-                gap: 6px;
-                margin-bottom: 10px;
+                gap: 4px;
+                margin-bottom: 8px;
+                display: flex !important;
             }
             
             .filters select {
-                font-size: 0.85rem;
-                padding: 8px;
+                font-size: 0.8rem;
+                padding: 6px;
+                flex: 1;
             }
             
             .course-item {
